@@ -1,0 +1,11 @@
+{
+    "alert_id": "ALERT999",
+    "application": "UnknownService",
+    "severity": "Warning",
+    "timestamp": "2025-05-12T12:34:56Z",
+    "alert_type": "Unclassified Alert",
+    "description": "The system detected an unspecified anomaly with unclear origin and no additional context.",
+    "affected_services": [],
+    "grafana_dashboard": "Unknown Dashboard",
+    "grafana_panel_id": 999
+  }

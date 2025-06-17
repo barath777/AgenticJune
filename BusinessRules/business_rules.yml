@@ -1,0 +1,6 @@
+manual_review_alerts:
+  - "database_corruption"
+  - "security_breach"
+  - "unauthorized_access"
+
+minimum_confidence_for_auto_remediate: 0.85

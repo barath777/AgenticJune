@@ -1,0 +1,18 @@
+# FastAPI stack
+fastapi==0.115.12
+uvicorn==0.34.2
+python-dotenv==1.1.0
+psycopg2-binary==2.9.10 
+
+# AI/ML stack (with CPU-only where possible)
+torch==2.3.0+cpu --index-url https://download.pytorch.org/whl/cpu
+faiss-cpu==1.11.0
+numpy==2.2.5
+pandas==2.2.3
+transformers==4.40.1
+sentence-transformers==2.6.1
+
+# Langchain stack
+langchain
+langchain-groq==0.3.2
+langgraph==0.4.3

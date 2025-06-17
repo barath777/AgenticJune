@@ -1,0 +1,6 @@
+<<<<<<< HEAD
+*.zip filter=lfs diff=lfs merge=lfs -text
+=======
+# Auto detect text files and perform LF normalization
+* text=auto
+>>>>>>> af6dfb7a87020f88878f40fd83835571f52bf1b5
