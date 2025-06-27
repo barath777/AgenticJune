@@ -4,7 +4,7 @@ from typing import Dict
 from groq import Groq 
 
 class DecisionAgent:
-    def __init__(self, rules_path: str = "../BusinessRules/business_rules.yml"):
+    def __init__(self, rules_path: str = "../BusinessRules/business_rules1.yml"):
         print("Construtor worked")
         self.rules = self.load_business_rules(rules_path)
         print("Business files loaded")
@@ -40,100 +40,53 @@ Return only a number. Example: 0.87
 
     def decide_action(self, recommendation_data: Dict) -> Dict:
         try:
-            alert_type = recommendation_data.get("alert_type", "")
-            severity = recommendation_data.get("severity", "unknown").lower()
-            past_resolution_exists = recommendation_data.get("past_resolution_exists", False)
             ai_suggested_fix = recommendation_data.get("ai_suggested_fix", "")
-            past_fix = recommendation_data.get("past_fix", "")
+            severity = recommendation_data.get("severity", "").lower()
             confidence = recommendation_data.get("confidence_score")
-
-            # Step 1: Business Policy Check
-            if alert_type in self.rules.get("manual_review_alerts", []):
-                return {
-                    "decision": "manual_review",
-                    "reason": f"Alert type '{alert_type}' always requires manual review per business rules."
-                }
-
-            # Step 2: Severity Check
-            if severity == "critical":
-                return {
-                    "decision": "manual_review",
-                    "reason": "Critical severity alert. Must be reviewed manually."
-                }
-
-            # Step 3: LLM Confidence (if not already available)
+            similar_alerts = recommendation_data.get("similar_alerts", [])
+            similarity_threshold = self.rules.get("general", {}).get("similarity_threshold", 0.8)
+            confidence_threshold = self.rules.get("general", {}).get("confidence_threshold", {}).get("threshold", 0.75)
+            # DEBUG print
+            print("[DEBUG] Similar Alerts:", similar_alerts)
+            print("[DEBUG] Confidence:", confidence)
+            
+            # Step 1: Get confidence if missing
             if confidence is None:
                 confidence = self.query_llm_confidence(ai_suggested_fix, severity)
-
-            # Step 4: Past Fix Match
-            if past_resolution_exists and ai_suggested_fix and ai_suggested_fix.lower() == past_fix.lower():
-                if confidence >= self.rules.get("minimum_confidence_for_auto_remediate", 0.85):
-                    return {
-                        "decision": "auto_remediate",
-                        "reason": "Past fix matches and confidence is high. Safe to auto-remediate."
-                    }
-                else:
-                    return {
-                        "decision": "review_required",
-                        "reason": "Past fix matches, but confidence is below threshold. Human review advised."
-                    }
-
-            # Step 5: Confidence threshold (fallback)
-            if confidence < self.rules.get("minimum_confidence_for_auto_remediate", 0.85):
+                print("[DEBUG] Queried confidence from LLM:", confidence)
+                
+            # Step 2: Determine if similar alert match exists
+            similar_match = any(
+                float(alert.get("similarity_score", 0.0)) >= similarity_threshold
+                for alert in similar_alerts
+                )
+            print("[DEBUG] Found similar match:", similar_match)
+            
+            # Step 3: Final decisions
+            if similar_match and confidence >= confidence_threshold:
                 return {
-                    "decision": "manual_review",
-                    "reason": "Confidence is low. Manual review required."
-                }
-
-            # Default fallback
+                    "decision": "auto_remediate",
+                    "reason": "Similar past alert found and confidence is high. Proceeding with auto-remediation."
+                    }
+                
+            if similar_match:
+                return {
+                    "decision": "review_required",
+                    "reason": "Similar alert found but confidence is low. Needs review."
+                    }
+                    
+            if confidence >= confidence_threshold:
+                return {
+                    "decision": "review_required",
+                    "reason": "No similar alerts found, but confidence is high. Review before applying fix."
+                    }
+                
             return {
-                "decision": "review_required",
-                "reason": "No past resolution match. Review recommended before applying fix."
-            }
-
+                "decision": "manual_review",
+                "reason": "No similar alerts found and confidence is low. Manual review required."
+                }
         except Exception as e:
             return {
                 "decision": "error",
-                "reason": f"Decision agent failed with exception: {str(e)}"
-            }
-
-
-
-
-
-
-
-
-
-
-
-# from typing import Dict
-
-# class DecisionAgent:
-#     def __init__(self):
-#         pass
-
-#     def decide_action(self, recommendation_data: Dict) -> Dict:
-#         try:
-#             # Ensure the confidence_score is present and valid
-#             confidence = recommendation_data.get("confidence_score")
-#             if confidence is None:
-#                 return {"decision": "manual_review", "reason": "No confidence score found in recommendation."}
-
-#             confp = confidence * 100  # Convert to percentage scale
-
-#             if confp >= 65:
-#                 decision = "auto_remediate"
-#             elif confp < 50:
-#                 decision = "escalate"
-#             else:
-#                 decision = "verify_with_human"
-
-#             return {
-#                 "decision": decision,
-#                 "Confidence Percentage": confp,
-#                 "recommendation_summary": recommendation_data
-#             }
-
-#         except Exception as e:
-#             return {"error": str(e)}
+                "reason": f"Decision agent failed: {str(e)}"
+                }
